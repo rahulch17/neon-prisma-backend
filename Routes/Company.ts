@@ -4,12 +4,18 @@ import {authMiddleware} from '../middleware/auth'
 
 const router = Router()
 
-router.get('/', async(req,res) =>{  //public
-    const company = await prisma.company.findMany()
+router.get('/', async(req,res) =>{     
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 3           //public
+    const company = await prisma.company.findMany({
+          skip: (page - 1) * limit,
+          take: limit
+    })
+
     res.json(company)
 })
 
-router.get('/:id', async (req,res) =>{ //public route
+router.get('/:id', async (req,res) =>{         //public route
     const company = await prisma.company.findUnique({
       where:{
         id: Number(req.params.id)
@@ -18,7 +24,7 @@ router.get('/:id', async (req,res) =>{ //public route
       res.json(company)
     })
 
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {     //protected
     console.log(req.body)
    const company= await prisma.company.create({
     data: {

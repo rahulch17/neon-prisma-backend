@@ -4,11 +4,16 @@ import {authMiddleware }from '../middleware/auth'
 const router = Router()
 
 
-router.get('/', async(req,res) =>{  //public
-    const DailyStocks = await prisma.daily_stock.findMany()
+router.get('/', async(req,res) =>{  
+      const page = Number(req.query.page) || 1
+      const limit = Number(req.query.limit) || 3        //public
+    const DailyStocks = await prisma.daily_stock.findMany({
+            skip: (page - 1) * limit,
+            take: limit
+    })
     res.json(DailyStocks)
 })
-router.get('/:id', async (req,res) =>{ //public
+router.get('/:id', async (req,res) =>{                //public
     const DailyStocks= await prisma.company.findUnique({
       where:{
         id: Number(req.params.id)
