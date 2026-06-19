@@ -14,7 +14,20 @@ router.get('/', async(req,res) =>{
 
     res.json(company)
 })
+  router.get('/symbol/:symbol', async (req,res) => {   // get a company details using symbol of a company
+    const company = await prisma.company.findUnique({
+      where:{
+        symbol: req.params.symbol
+      }
+    })
+    if(!company){
+      return res.status(404).json({
+        message:"company not found having this symbol"
+      })
+  }
+    res.json(company)
 
+  })
 router.get('/:id', async (req,res) =>{         //public route
     const company = await prisma.company.findUnique({
       where:{
@@ -23,6 +36,8 @@ router.get('/:id', async (req,res) =>{         //public route
     })
       res.json(company)
     })
+
+
 
 router.post('/', authMiddleware, async (req, res) => {     //protected
     console.log(req.body)
