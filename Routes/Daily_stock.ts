@@ -72,7 +72,8 @@ router.post('/', authMiddleware, async (req,res) =>{ //protectec
     
   }
 })
-router.put('/:id', authMiddleware, async (req,res) =>{ ///proctecte
+router.put('/:id', authMiddleware, async (req,res) =>{ 
+  try{ ///proctecte
     const DailyStock = await prisma.daily_stock.update({
     where: {
       id: Number(req.params.id)
@@ -88,8 +89,13 @@ router.put('/:id', authMiddleware, async (req,res) =>{ ///proctecte
       return res.status(404).json({
         message:"Stock not found"
       })
-
+    
     }
+  }catch(error){
+    return res.status(500).json({
+      message:"Internal server error"
+    })
+  }
 })
 
 router.delete('/:id', authMiddleware, async (req, res) => {
