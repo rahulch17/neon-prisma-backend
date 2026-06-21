@@ -44,7 +44,8 @@ router.get('/', async (req, res) => {
     }
   })
 })  
-router.get('/symbol/:symbol', async (req,res) => {   // get a company details using symbol of a company
+router.get('/symbol/:symbol', async (req,res) => { 
+  try{                                                // get a company details using symbol of a company
     const company = await prisma.company.findUnique({
       where:{
         symbol: req.params.symbol
@@ -56,6 +57,11 @@ router.get('/symbol/:symbol', async (req,res) => {   // get a company details us
       })
   }
     res.json(company)
+}catch(error){
+  return res.status(500).json({
+    message:"internal server error"
+  })
+}
 
   })
 
