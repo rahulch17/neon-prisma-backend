@@ -4,17 +4,47 @@ import {authMiddleware} from '../middleware/auth'
 
 const router = Router()
 
-router.get('/', async(req,res) =>{     
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 3           //public
-    const company = await prisma.company.findMany({
-          skip: (page - 1) * limit,
-          take: limit
-    })
+router.get('/', async (req, res) => {
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 3
 
-    res.json(company)
-})
-  router.get('/symbol/:symbol', async (req,res) => {   // get a company details using symbol of a company
+  const name = req.query.name as string
+
+  const where = {
+    name: name
+      ? {
+          contains: name,
+          mode: 'insensitive' as const
+        }
+      : undefined
+  }
+
+  const total = await prisma.company.count({
+    where
+  })
+
+  const company = await prisma.company.findMany({
+    select: {
+      id: true,
+      name: true,
+      symbol: true
+    },
+    where,
+    skip: (page - 1) * limit,
+    take: limit
+  })
+
+  res.json({
+    data: company,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  })
+})  
+router.get('/symbol/:symbol', async (req,res) => {   // get a company details using symbol of a company
     const company = await prisma.company.findUnique({
       where:{
         symbol: req.params.symbol
@@ -28,12 +58,18 @@ router.get('/', async(req,res) =>{
     res.json(company)
 
   })
+
 router.get('/:id', async (req,res) =>{         //public route
     const company = await prisma.company.findUnique({
       where:{
         id: Number(req.params.id)
       }
     })
+    if (!company) {
+      return res.status(404).json({
+        message: "company not found"
+      })
+    }
       res.json(company)
     })
 
@@ -41,6 +77,13 @@ router.get('/:id', async (req,res) =>{         //public route
 
 router.post('/', authMiddleware, async (req, res) => {     //protected
     console.log(req.body)
+    try {
+      if (!req.body.name || !req.body.symbol){
+      return res.status(404).json({
+        message:"name and symbol are required"
+      })
+
+    }
    const company= await prisma.company.create({
     data: {
       name: req.body.name,
@@ -49,10 +92,23 @@ router.post('/', authMiddleware, async (req, res) => {     //protected
   })
 
   res.json(company)
+}catch(error){
+  res.status(500).json({
+    message:"internal server error"
+  })
+}
 })
 
-router.put('/:id', authMiddleware, async (req,res) =>{ ///proctected
+router.put('/:id', authMiddleware, async (req,res) =>{
+      try{
+        if(!req.body.name||!req.body.symbol){
+          return res.status(400).json({
+            message:"name and symbol required"
+          })
+          
+        }///proctected
     const company=await prisma.company.update({
+
     where: {
       id: Number(req.params.id)
     },
@@ -62,18 +118,39 @@ router.put('/:id', authMiddleware, async (req,res) =>{ ///proctected
     }
   })
     res.json(company)
+}
+catch(error){
+  res.status(500).json({
+    message:"internal server error"
+  })
+}
 })
 
-router.delete('/:id', authMiddleware, async (req,res) =>{ //protected
-    await prisma.company.delete({
+                                                                 //protected
+router.delete('/:id', authMiddleware, async (req, res) => {
+
+  const company = await prisma.company.findUnique({
     where: {
       id: Number(req.params.id)
     }
   })
-    res.json({
-        message:`deleted company ${req.params.id}`
+
+  if (!company) {
+    return res.status(404).json({
+      message: "company not found"
     })
-})      
+  }
+
+  await prisma.company.delete({
+    where: {
+      id: Number(req.params.id)
+    }
+  })
+
+  res.json({
+    message: `deleted company ${req.params.id}`
+  })
+})    
 
 
 

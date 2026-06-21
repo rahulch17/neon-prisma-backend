@@ -4,17 +4,42 @@ import {authMiddleware }from '../middleware/auth'
 const router = Router()
 
 
-router.get('/', async(req,res) =>{  
-      const page = Number(req.query.page) || 1
-      const limit = Number(req.query.limit) || 3        //public
-    const DailyStocks = await prisma.daily_stock.findMany({
+router.get('/', async(req,res) =>{   
+      const page = Number(req.query.page) || 1         
+      const limit = Number(req.query.limit) || 3    
+      const company_id = Number(req.query.company_id)
+
+      const where ={
+        company_id:company_id || undefined
+                }
+
+      const total = await prisma.daily_stock.count({
+          where
+    })
+
+      const DailyStocks = await prisma.daily_stock.findMany({
+      select:{                                               
+        company_id: true,
+        date: true,
+        close: true
+
+      },
+      where,
             skip: (page - 1) * limit,
             take: limit
     })
-    res.json(DailyStocks)
+    res.json({
+  data: DailyStocks,
+  pagination: {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit)
+  }
+  })
 })
 router.get('/:id', async (req,res) =>{                //public
-    const DailyStocks= await prisma.company.findUnique({
+    const DailyStocks= await prisma.daily_stock.findUnique({
       where:{
         id: Number(req.params.id)
       }
@@ -24,14 +49,29 @@ router.get('/:id', async (req,res) =>{                //public
 
 router.post('/', authMiddleware, async (req,res) =>{ //protectec
     console.log(req.body)
+    try{
+      if(!(Number(req.body.company_id ))|| !req.body.date || !req.body.close){
+        return res.status(400).json({
+        message:"company_id,date and close are required"
+        })
+      }
+
+    
     const DailyStocks = await prisma.daily_stock.create({
     data: {
-        company_id: req.body.company_id,
+        company_id: Number(req.body.company_id),
         date: new Date(req.body.date),
         close: Number(req.body.close)
     }
     })
     res.json(DailyStocks)
+  }
+  catch(error){
+    res.status(500).json({
+      message:"internal server error"
+    })
+    
+  }
 })
 router.put('/:id', authMiddleware, async (req,res) =>{ ///proctecte
     const DailyStock = await prisma.daily_stock.update({
@@ -39,22 +79,42 @@ router.put('/:id', authMiddleware, async (req,res) =>{ ///proctecte
       id: Number(req.params.id)
     },
     data: {
-    company_id:req.body.company_id,
+    company_id:Number(req.body.company_id),
     date: new Date(req.body.date),
     close:Number(req.body.close),
     }
   })
     res.json(DailyStock)
+    if(!DailyStock){
+      return res.status(404).json({
+        message:"Stock not found"
+      })
+
+    }
 })
 
-router.delete('/:id', authMiddleware, async (req,res) =>{ //protected
-    await prisma.daily_stock.delete({
+router.delete('/:id', authMiddleware, async (req, res) => {
+
+  const DailyStocks = await prisma.daily_stock.findUnique({
     where: {
       id: Number(req.params.id)
     }
   })
-    res.json({
-        message:`successfully deleted daily stock ${req.params.id}`
+
+  if (!DailyStocks) {
+    return res.status(404).json({
+      message: "Stock not found"
     })
-})  
+  }
+
+  await prisma.daily_stock.delete({
+    where: {
+      id: Number(req.params.id)
+    }
+  })
+
+  res.json({
+    message: `deleted stock ${req.params.id}`
+  })
+}) 
 export default router 
