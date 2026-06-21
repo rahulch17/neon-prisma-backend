@@ -48,7 +48,6 @@ router.get('/:id', async (req,res) =>{                //public
     })
 
 router.post('/', authMiddleware, async (req,res) =>{ //protectec
-    console.log(req.body)
     try{
       if(!(Number(req.body.company_id ))|| !req.body.date || !req.body.close){
         return res.status(400).json({
@@ -94,7 +93,7 @@ router.put('/:id', authMiddleware, async (req,res) =>{ ///proctecte
 })
 
 router.delete('/:id', authMiddleware, async (req, res) => {
-
+try{
   const DailyStocks = await prisma.daily_stock.findUnique({
     where: {
       id: Number(req.params.id)
@@ -116,5 +115,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   res.json({
     message: `deleted stock ${req.params.id}`
   })
+}catch(error){
+  return res.status(500).json({
+    message:"Internal server error"
+  })
+}
 }) 
 export default router 

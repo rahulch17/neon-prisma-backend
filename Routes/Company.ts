@@ -128,7 +128,7 @@ catch(error){
 
                                                                  //protected
 router.delete('/:id', authMiddleware, async (req, res) => {
-
+try{
   const company = await prisma.company.findUnique({
     where: {
       id: Number(req.params.id)
@@ -150,6 +150,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   res.json({
     message: `deleted company ${req.params.id}`
   })
+}catch(error){
+  return res.status(500).json({
+    message:"internal server error"
+  })
+}
 })    
 
 
