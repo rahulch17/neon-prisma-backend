@@ -50,7 +50,7 @@ router.get('/:id', async (req,res) =>{                //public
 router.post('/', authMiddleware, async (req,res) =>{ //protectec
     try{
       if(!(Number(req.body.company_id ))|| !req.body.date || !req.body.close){
-        return res.status(400).json({
+        return res.status(404).json({
         message:"company_id,date and close are required"
         })
       }

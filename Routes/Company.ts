@@ -108,7 +108,7 @@ router.post('/', authMiddleware, async (req, res) => {     //protected
 router.put('/:id', authMiddleware, async (req,res) =>{
       try{
         if(!req.body.name||!req.body.symbol){
-          return res.status(400).json({
+          return res.status(404).json({
             message:"name and symbol required"
           })
           
